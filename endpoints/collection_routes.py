@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 router = APIRouter()
+
+# In-memory "database"
+user_collections = {}  # access_token -> list of albums
 
 
 class Album(BaseModel):
@@ -13,25 +16,41 @@ class Album(BaseModel):
     spotify_url: str
 
 
+def get_token_user(authorization: str | None):
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    return authorization.replace("Bearer ", "")
+
+
 @router.get("/collection")
-def get_collection(request: Request):
-    collection = request.session.get("vinyl_collection", [])
-    return collection
+def get_collection(authorization: str = Header(default=None)):
+    token = get_token_user(authorization)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    return user_collections.get(token, [])
 
 
 @router.post("/collection")
-def add_to_collection(request: Request, album: Album):
-    collection = request.session.get("vinyl_collection", [])
+def add_to_collection(album: Album, authorization: str = Header(default=None)):
+    token = get_token_user(authorization)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    collection = user_collections.get(token, [])
     collection.append(album.dict())
-    request.session["vinyl_collection"] = collection
+    user_collections[token] = collection
     return {"message": "Album added to collection", "total": len(collection)}
 
 
 @router.delete("/collection/{index}")
-def delete_from_collection(request: Request, index: int):
-    collection = request.session.get("vinyl_collection", [])
+def delete_from_collection(index: int, authorization: str = Header(default=None)):
+    token = get_token_user(authorization)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    collection = user_collections.get(token, [])
     if 0 <= index < len(collection):
         removed = collection.pop(index)
-        request.session["vinyl_collection"] = collection
+        user_collections[token] = collection
         return {"message": "Removed", "removed": removed}
     return JSONResponse(status_code=404, content={"error": "Index out of range"})

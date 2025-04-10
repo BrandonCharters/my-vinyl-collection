@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import os
@@ -22,9 +21,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# 🔐 Sessions
-app.add_middleware(SessionMiddleware, secret_key="super-secret-session-key")
 
 # Routers
 app.include_router(spotify_router)
