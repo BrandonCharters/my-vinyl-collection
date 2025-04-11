@@ -1,40 +1,28 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-import os
 import requests
 
+from config import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, SCOPE, FRONTEND_URL
 from endpoints.spotify_routes import router as spotify_router
 from endpoints.collection_routes import router as collection_router
 
-load_dotenv()
-
 app = FastAPI()
 
-# ✅ Add middleware after app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Routers
 app.include_router(spotify_router)
 app.include_router(collection_router)
 
 
-CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
-CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
-REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
-SCOPE = "user-read-private"
-
-
 @app.get("/")
-def login():
+def login() -> RedirectResponse:
     auth_url = (
         "https://accounts.spotify.com/authorize"
         f"?client_id={CLIENT_ID}"
@@ -42,17 +30,17 @@ def login():
         f"&redirect_uri={REDIRECT_URI}"
         f"&scope={SCOPE}"
     )
-
     print("🔗 Redirecting to:", auth_url)
     return RedirectResponse(auth_url)
 
+
 @app.get("/ping")
-def ping():
+def ping() -> dict:
     return {"message": "pong"}
 
 
-@app.get("/callback")
-def callback(request: Request):
+@app.get("/callback", response_model=None)
+def callback(request: Request) -> RedirectResponse | HTMLResponse:
     code = request.query_params.get("code")
     if not code:
         return HTMLResponse("<h1>Authorization failed</h1>")
@@ -73,8 +61,7 @@ def callback(request: Request):
         return HTMLResponse("<h1>Failed to get token</h1>")
 
     tokens = response.json()
-    access_token = tokens["access_token"]
+    access_token = tokens.get("access_token")
 
-    # 🔁 Redirect with token in URL
-    redirect_url = f"http://localhost:5173/callback?access_token={access_token}"
+    redirect_url = f"{FRONTEND_URL}/callback?access_token={access_token}"
     return RedirectResponse(redirect_url)
