@@ -1,23 +1,32 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// src/components/Callback.jsx
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-export default function Callback() {
+function Callback() {
+  const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("access_token");
+    const params = new URLSearchParams(location.search);
+    const accessToken = params.get('access_token');
 
-    if (token) {
-      localStorage.setItem("access_token", token);
-      console.log("✅ Stored access token:", token);
+    if (accessToken) {
+      console.log("Received access token:", accessToken);
+      localStorage.setItem('spotify_access_token', accessToken);
+      // Redirect to the collection page after storing the token
+      navigate('/collection');
     } else {
-      console.warn("⚠️ No access_token in URL.");
+      console.error("No access token found in callback URL");
+      // Redirect to a login/error page or home
+      navigate('/'); // Or maybe a dedicated login prompt page
     }
+  }, [location, navigate]);
 
-    // Clean up and go home
-    navigate("/");
-  }, []);
-
-  return <p>Logging you in...</p>;
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
+      <p className="text-xl animate-pulse">Processing authentication...</p>
+    </div>
+  );
 }
+
+export default Callback;
