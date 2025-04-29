@@ -1,14 +1,16 @@
 // src/pages/SearchPage.jsx
 import React, { useState, useCallback } from 'react';
 import { searchAlbums, addToCollection } from '../api';
-import AlbumCard from '../components/AlbumCard'; // Use the general card here
+import AlbumCard from '../components/AlbumCard';
+import AlbumDetailModal from '../components/AlbumDetailModal';
 
 function SearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [addSuccess, setAddSuccess] = useState(null); // Message for successful add
+  const [addSuccess, setAddSuccess] = useState(null);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
 
   const handleSearch = useCallback(async (e) => {
     e.preventDefault();
@@ -17,7 +19,8 @@ function SearchPage() {
     setLoading(true);
     setError(null);
     setResults([]);
-    setAddSuccess(null); // Clear success message on new search
+    setAddSuccess(null);
+    setSelectedAlbum(null); // Clear selected album on new search
 
     try {
       const response = await searchAlbums(query);
@@ -34,29 +37,56 @@ function SearchPage() {
   }, [query]);
 
   const handleAddToCollection = async (album) => {
-    // Clear previous success message
     setAddSuccess(null);
-    setError(null); // Clear errors too
+    setError(null);
 
-    // Basic album structure check (adjust if your backend model differs slightly)
-    const albumToAdd = {
-        name: album.name,
-        artist: album.artist,
-        release_date: album.release_date,
-        cover_url: album.cover_url,
-        spotify_url: album.spotify_url,
-    };
+    if (album.in_collection) {
+      setError(`"${album.name}" is already in your collection`);
+      return;
+    }
 
     try {
-      const response = await addToCollection(albumToAdd);
+      const response = await addToCollection(album);
       console.log("Add response:", response.data);
       setAddSuccess(`"${album.name}" added to your collection!`);
-      // Optional: Clear success message after a few seconds
+      
+      // Update the local state to mark this album as in collection
+      setResults(prevResults => 
+        prevResults.map(result => 
+          result.id === album.id ? { ...result, in_collection: true } : result
+        )
+      );
+      
+      // If the modal is open for this album, update the selected album too
+      if (selectedAlbum?.id === album.id) {
+        setSelectedAlbum(prev => ({ ...prev, in_collection: true }));
+      }
+      
       setTimeout(() => setAddSuccess(null), 3000);
     } catch (err) {
       console.error("Add to collection error:", err);
-       setError(err.response?.data?.error || "Failed to add album. Are you logged in?");
+      if (err.response?.status === 400 && err.response?.data?.error === "Album already exists in collection") {
+        setResults(prevResults => 
+          prevResults.map(result => 
+            result.id === album.id ? { ...result, in_collection: true } : result
+          )
+        );
+        if (selectedAlbum?.id === album.id) {
+          setSelectedAlbum(prev => ({ ...prev, in_collection: true }));
+        }
+        setError(`"${album.name}" is already in your collection`);
+      } else {
+        setError(err.response?.data?.error || "Failed to add album. Are you logged in?");
+      }
     }
+  };
+
+  const handleAlbumClick = (album) => {
+    setSelectedAlbum(album);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedAlbum(null);
   };
 
   // Check if logged in (simple check for token existence)
@@ -72,7 +102,7 @@ function SearchPage() {
            <p className="font-semibold">You are not logged in.</p>
            <p className="text-sm mb-3">Please log in via Spotify to search and manage your collection.</p>
            <a
-             href={`${backendUrl}/`} // Link to your backend's login route
+             href={`${backendUrl}/`}
              className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
            >
              Login with Spotify
@@ -87,7 +117,7 @@ function SearchPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search album name or artist..."
           className="p-2 rounded-l-md border border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500 w-full max-w-md"
-          disabled={!isLoggedIn} // Disable if not logged in
+          disabled={!isLoggedIn}
         />
         <button
           type="submit"
@@ -105,13 +135,22 @@ function SearchPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {results.map((album, index) => (
             <AlbumCard
-              key={`${album.spotify_url}-${index}`} // Use spotify_url + index for potential duplicates in search
+              key={`${album.spotify_url}-${index}`}
               album={album}
               onAdd={handleAddToCollection}
+              onClick={() => handleAlbumClick(album)}
             />
           ))}
         </div>
       )}
+
+      {/* Album Detail Modal */}
+      <AlbumDetailModal
+        album={selectedAlbum}
+        isOpen={!!selectedAlbum}
+        onClose={handleCloseModal}
+        onAdd={handleAddToCollection}
+      />
     </div>
   );
 }
