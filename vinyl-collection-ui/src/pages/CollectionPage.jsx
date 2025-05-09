@@ -1,7 +1,7 @@
 // src/pages/CollectionPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { getCollection, deleteFromCollection } from '../api';
+import { getCollection, deleteFromCollection, updateCondition } from '../api';
 import VinylCrateItem from '../components/VinylCrateItem';
 import AlbumDetailModal from '../components/AlbumDetailModal'; // Import the modal
 import VinylStack from '../components/VinylStack';
@@ -84,6 +84,14 @@ function CollectionPage() {
 
   const handleCloseModal = () => {
     setSelectedAlbum(null);
+  };
+
+  const handleUpdateCondition = async (albumId, newCondition) => {
+    await updateCondition(albumId, newCondition);
+    setCollection(prev => prev.map(album => album.id === albumId ? { ...album, condition: newCondition } : album));
+    if (selectedAlbum && selectedAlbum.id === albumId) {
+      setSelectedAlbum(prev => ({ ...prev, condition: newCondition }));
+    }
   };
 
   // Simple check for login status
@@ -220,6 +228,7 @@ function CollectionPage() {
             handleRemove(index);
           }
         }}
+        onUpdateCondition={handleUpdateCondition}
       />
     </div>
   );

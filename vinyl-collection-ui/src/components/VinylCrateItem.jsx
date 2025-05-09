@@ -10,12 +10,19 @@ function VinylCrateItem({ album, index, onRemove, onClick }) {
       onClick={() => onClick(album)}
       title={`View details for ${name} by ${artist}`}
     >
-      <img
-        src={cover_url || 'https://via.placeholder.com/150?text=No+Cover'}
-        alt={`${name} cover`}
-        className="w-full h-auto object-cover aspect-square rounded-sm"
-        loading="lazy" // Lazy load images
-      />
+      <div className="relative">
+        <img
+          src={cover_url || 'https://via.placeholder.com/150?text=No+Cover'}
+          alt={`${name} cover`}
+          className="w-full h-auto object-cover aspect-square rounded-sm"
+          loading="lazy" // Lazy load images
+        />
+      </div>
+      {album.condition && (
+        <div className="mt-1 text-center">
+          <span className="inline-block px-2 py-0.5 bg-vinyl-secondary rounded-full text-xs text-vinyl-light font-semibold">{album.condition}</span>
+        </div>
+      )}
       {/* Subtle overlay on hover maybe? */}
       {/* <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div> */}
 

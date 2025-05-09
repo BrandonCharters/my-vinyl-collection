@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
-const AlbumCard = ({ album, onAdd, onClick, showAddButton = true }) => {
+const AlbumCard = ({ album, onAdd, onClick, showAddButton = true, justAdded = false }) => {
   const { name, artist, release_date, cover_url, spotify_url, in_collection } = album;
   const [ref, inView] = useInView({
     triggerOnce: true,
@@ -63,10 +63,15 @@ const AlbumCard = ({ album, onAdd, onClick, showAddButton = true }) => {
           </a>
           {showAddButton && (
             in_collection ? (
-              <div className="flex items-center space-x-1 text-gray-400 text-xs">
+              <motion.div
+                className="flex items-center space-x-1 text-gray-400 text-xs"
+                initial={justAdded ? { scale: 1.3, opacity: 0 } : false}
+                animate={justAdded ? { scale: [1.3, 1], opacity: [0, 1] } : {}}
+                transition={{ duration: 0.6, type: 'spring' }}
+              >
                 <CheckCircleIcon className="h-4 w-4" />
                 <span>In Collection</span>
-              </div>
+              </motion.div>
             ) : (
               <button
                 onClick={(e) => {

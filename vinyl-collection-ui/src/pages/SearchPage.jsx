@@ -1,6 +1,6 @@
 // src/pages/SearchPage.jsx
 import React, { useState, useCallback } from 'react';
-import { searchAlbums, addToCollection } from '../api';
+import { searchAlbums, addToCollection, updateCondition } from '../api';
 import AlbumCard from '../components/AlbumCard';
 import AlbumDetailModal from '../components/AlbumDetailModal';
 
@@ -10,6 +10,7 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [addSuccess, setAddSuccess] = useState(null);
+  const [justAddedAlbumId, setJustAddedAlbumId] = useState(null);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
 
   const handleSearch = useCallback(async (e) => {
@@ -39,42 +40,48 @@ function SearchPage() {
   const handleAddToCollection = async (album) => {
     setAddSuccess(null);
     setError(null);
+    setJustAddedAlbumId(null);
 
-    if (album.in_collection) {
-      setError(`"${album.name}" is already in your collection`);
+    // Always open the modal for condition selection
+    setSelectedAlbum(album);
+  };
+
+  // Add a new handler for confirming add from the modal
+  const handleConfirmAddToCollection = async (albumWithCondition) => {
+    setAddSuccess(null);
+    setError(null);
+    setJustAddedAlbumId(null);
+
+    if (albumWithCondition.in_collection) {
+      setError(`"${albumWithCondition.name}" is already in your collection`);
       return;
     }
 
     try {
-      const response = await addToCollection(album);
-      console.log("Add response:", response.data);
-      setAddSuccess(`"${album.name}" added to your collection!`);
-      
-      // Update the local state to mark this album as in collection
+      const response = await addToCollection(albumWithCondition);
       setResults(prevResults => 
         prevResults.map(result => 
-          result.id === album.id ? { ...result, in_collection: true } : result
+          result.id === albumWithCondition.id ? { ...result, in_collection: true } : result
         )
       );
-      
-      // If the modal is open for this album, update the selected album too
-      if (selectedAlbum?.id === album.id) {
+      if (selectedAlbum?.id === albumWithCondition.id) {
         setSelectedAlbum(prev => ({ ...prev, in_collection: true }));
       }
-      
-      setTimeout(() => setAddSuccess(null), 3000);
+      setJustAddedAlbumId(albumWithCondition.id);
+      setTimeout(() => setJustAddedAlbumId(null), 1200);
+      setSelectedAlbum(null);
     } catch (err) {
       console.error("Add to collection error:", err);
       if (err.response?.status === 400 && err.response?.data?.error === "Album already exists in collection") {
         setResults(prevResults => 
           prevResults.map(result => 
-            result.id === album.id ? { ...result, in_collection: true } : result
+            result.id === albumWithCondition.id ? { ...result, in_collection: true } : result
           )
         );
-        if (selectedAlbum?.id === album.id) {
+        if (selectedAlbum?.id === albumWithCondition.id) {
           setSelectedAlbum(prev => ({ ...prev, in_collection: true }));
         }
-        setError(`"${album.name}" is already in your collection`);
+        setError(`"${albumWithCondition.name}" is already in your collection`);
       } else {
         setError(err.response?.data?.error || "Failed to add album. Are you logged in?");
       }
@@ -87,6 +94,14 @@ function SearchPage() {
 
   const handleCloseModal = () => {
     setSelectedAlbum(null);
+  };
+
+  const handleUpdateCondition = async (albumId, newCondition) => {
+    setResults(prev => prev.map(album => album.id === albumId ? { ...album, condition: newCondition } : album));
+    if (selectedAlbum && selectedAlbum.id === albumId) {
+      setSelectedAlbum(prev => ({ ...prev, condition: newCondition }));
+    }
+    await updateCondition(albumId, newCondition);
   };
 
   // Check if logged in (simple check for token existence)
@@ -129,7 +144,6 @@ function SearchPage() {
       </form>
 
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-      {addSuccess && <p className="text-green-500 text-center mb-4">{addSuccess}</p>}
 
       {results.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -139,6 +153,7 @@ function SearchPage() {
               album={album}
               onAdd={handleAddToCollection}
               onClick={() => handleAlbumClick(album)}
+              justAdded={album.id === justAddedAlbumId}
             />
           ))}
         </div>
@@ -149,7 +164,8 @@ function SearchPage() {
         album={selectedAlbum}
         isOpen={!!selectedAlbum}
         onClose={handleCloseModal}
-        onAdd={handleAddToCollection}
+        onAdd={handleConfirmAddToCollection}
+        onUpdateCondition={handleUpdateCondition}
       />
     </div>
   );

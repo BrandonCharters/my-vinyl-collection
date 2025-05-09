@@ -59,3 +59,7 @@ export const addToCollection = (album) => {
 export const deleteFromCollection = (index) => {
   return apiClient.delete(`/collection/${index}`);
 };
+
+export const updateCondition = (albumId, condition) => {
+  return apiClient.patch(`/collection/${albumId}/condition`, null, { params: { condition } });
+};

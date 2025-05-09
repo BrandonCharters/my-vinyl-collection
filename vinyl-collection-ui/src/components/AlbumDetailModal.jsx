@@ -1,5 +1,5 @@
 // src/components/AlbumDetailModal.jsx
-import React, { Fragment } from 'react';
+import React, { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { motion } from 'framer-motion';
 import { 
@@ -12,9 +12,31 @@ import {
   ChartBarIcon,
   PlusCircleIcon
 } from '@heroicons/react/24/solid';
+import Dropdown from './Dropdown';
 
-const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd }) => {
+const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCondition }) => {
   if (!album) return null;
+
+  const CONDITION_OPTIONS = [
+    { code: 'M', label: 'Mint (M): Unplayed, factory sealed, or in perfect condition.' },
+    { code: 'NM', label: 'Near Mint (NM): Very minor signs of wear or play, essentially perfect.' },
+    { code: 'EX', label: 'Excellent (EX): Minor signs of wear, plays perfectly with minimal surface noise.' },
+    { code: 'VG+', label: 'Very Good Plus (VG+): Some signs of wear, light surface noise, but still a pleasurable listen.' },
+    { code: 'VG', label: 'Very Good (VG): Noticeable wear and noise, but still enjoyable.' },
+    { code: 'G', label: 'Good (G): Significant wear and noise, may include skips or repeats, but still playable.' },
+    { code: 'F', label: 'Fair (F): Heavy wear, often with skips or other playback issues, more for collectors than listeners.' },
+    { code: 'P', label: 'Poor (P): Essentially unplayable, may have value due to rarity, often in bargain bins.' }
+  ];
+  const [condition, setCondition] = useState(album?.condition || CONDITION_OPTIONS[0].code);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [editingCondition, setEditingCondition] = useState(false);
+
+  React.useEffect(() => {
+    setCondition(album?.condition || CONDITION_OPTIONS[0].code);
+    setSaveSuccess(false);
+    setEditingCondition(false);
+  }, [album]);
 
   const handleSpotifyClick = () => {
     window.open(album.spotify_url, '_blank');
@@ -26,7 +48,19 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd }) => {
   };
 
   const handleAddClick = () => {
-    onAdd(album);
+    onAdd({ ...album, condition });
+  };
+
+  const handleSaveCondition = async () => {
+    if (!album || !album.id) return;
+    setSaving(true);
+    try {
+      await onUpdateCondition(album.id, condition);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 1200);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -55,7 +89,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd }) => {
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-vinyl-primary p-6 shadow-xl transition-all">
+              <Dialog.Panel className="relative w-full max-w-5xl min-w-[350px] md:min-w-[700px] lg:min-w-[900px] transform overflow-hidden rounded-2xl bg-vinyl-primary p-6 shadow-xl transition-all">
                 <button
                   onClick={onClose}
                   className="absolute right-4 top-4 text-vinyl-light/60 hover:text-vinyl-light transition-colors"
@@ -87,6 +121,54 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd }) => {
                           {album.name}
                         </Dialog.Title>
                         <p className="text-xl text-vinyl-light/80 mb-4">{album.artist}</p>
+                        {album.in_collection && (
+                          <div className="mt-2">
+                            {!editingCondition ? (
+                              <>
+                                <span className="inline-block px-3 py-1 bg-vinyl-secondary rounded-full text-sm text-vinyl-light font-semibold mr-2">Condition: {album.condition}</span>
+                                <span className="text-xs text-vinyl-light/60">
+                                  {CONDITION_OPTIONS.find(opt => opt.code === album.condition)?.label}
+                                </span>
+                                <button
+                                  className="ml-3 px-3 py-1 bg-vinyl-accent rounded text-white text-xs font-semibold hover:bg-vinyl-accent/80 transition-colors"
+                                  onClick={() => setEditingCondition(true)}
+                                >
+                                  Edit
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <Dropdown
+                                  id="condition-edit"
+                                  label="Condition / Rating"
+                                  options={CONDITION_OPTIONS}
+                                  value={condition}
+                                  onChange={e => setCondition(e.target.value)}
+                                />
+                                <span className="text-xs text-vinyl-light/60 block mb-2">
+                                  {CONDITION_OPTIONS.find(opt => opt.code === condition)?.label}
+                                </span>
+                                <motion.button
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={handleSaveCondition}
+                                  className="px-4 py-2 bg-green-600 rounded-lg text-white font-medium hover:bg-green-700 transition-colors mt-1"
+                                  disabled={saving || condition === album.condition}
+                                >
+                                  {saveSuccess ? 'Saved!' : saving ? 'Saving...' : 'Save Condition'}
+                                </motion.button>
+                                <button
+                                  className="ml-2 px-3 py-2 bg-gray-600 rounded text-white text-xs font-semibold hover:bg-gray-500 transition-colors mt-1"
+                                  onClick={() => {
+                                    setEditingCondition(false);
+                                    setCondition(album.condition);
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -142,33 +224,39 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between mt-6 space-x-4">
+                    <div className="flex flex-row flex-nowrap items-center justify-between mt-6 gap-4">
+                      {!album.in_collection && (
+                        <Dropdown
+                          id="condition"
+                          label="Condition / Rating"
+                          options={CONDITION_OPTIONS}
+                          value={condition}
+                          onChange={e => setCondition(e.target.value)}
+                        />
+                      )}
                       <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={handleSpotifyClick}
-                        className="flex items-center space-x-2 px-4 py-2 bg-[#1DB954] rounded-lg text-white font-medium hover:bg-[#1DB954]/80 transition-colors flex-1"
+                        className="min-w-[170px] px-4 py-2 bg-[#1DB954] rounded-lg text-white font-medium hover:bg-[#1DB954]/80 transition-colors text-center"
                       >
-                        <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-                        <span>Open in Spotify</span>
+                        Open in Spotify
                       </motion.button>
                       
                       {album.in_collection ? (
                         <motion.button
                           whileTap={{ scale: 0.95 }}
                           onClick={handleRemoveClick}
-                          className="flex items-center space-x-2 px-4 py-2 bg-red-500 rounded-lg text-white font-medium hover:bg-red-600 transition-colors"
+                          className="px-4 py-2 bg-red-500 rounded-lg text-white font-medium hover:bg-red-600 transition-colors"
                         >
-                          <TrashIcon className="h-5 w-5" />
-                          <span>Remove</span>
+                          Remove
                         </motion.button>
                       ) : (
                         <motion.button
                           whileTap={{ scale: 0.95 }}
                           onClick={handleAddClick}
-                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 rounded-lg text-white font-medium hover:bg-green-700 transition-colors"
+                          className="px-4 py-2 bg-green-600 rounded-lg text-white font-medium hover:bg-green-700 transition-colors"
                         >
-                          <PlusCircleIcon className="h-5 w-5" />
-                          <span>Add to Collection</span>
+                          Add to Collection
                         </motion.button>
                       )}
                     </div>

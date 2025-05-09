@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header, Path
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, ClassVar
 import requests
 
 router = APIRouter()
@@ -32,6 +32,8 @@ class Album(BaseModel):
     genres: List[str] = []
     label: Optional[str] = ""
     popularity: Optional[int] = 0
+    condition: Optional[str] = "M"
+    VALID_CONDITIONS: ClassVar[set[str]] = {"M", "NM", "EX", "VG+", "VG", "G", "F", "P"}
 
 
 def get_token_user(authorization: str | None) -> str | None:
@@ -76,7 +78,10 @@ def add_to_collection(album: Album, authorization: str = Header(default=None)):
     
     if not album_id:
         print("Could not determine Spotify ID, storing basic album info")
-        collection.append(album.dict())
+        album_condition = album.condition if album.condition in Album.VALID_CONDITIONS else "M"
+        album_dict = album.dict()
+        album_dict["condition"] = album_condition
+        collection.append(album_dict)
         return {"message": "Album added to collection (basic info)", "total": len(collection)}
 
     print(f"Using Spotify ID: {album_id}")
@@ -96,7 +101,10 @@ def add_to_collection(album: Album, authorization: str = Header(default=None)):
         if album_response.status_code != 200:
             print(f"Error response: {album_response.text}")
             # If we can't fetch details, fall back to basic info
-            collection.append(album.dict())
+            album_condition = album.condition if album.condition in Album.VALID_CONDITIONS else "M"
+            album_dict = album.dict()
+            album_dict["condition"] = album_condition
+            collection.append(album_dict)
             return {"message": "Album added with basic info (API error)", "total": len(collection)}
         
         album_data = album_response.json()
@@ -116,6 +124,7 @@ def add_to_collection(album: Album, authorization: str = Header(default=None)):
             print(f"Failed to fetch tracks: {tracks_response.status_code}")
 
         # Update album with full details
+        album_condition = album.condition if album.condition in Album.VALID_CONDITIONS else "M"
         updated_album = {
             "name": album_data["name"],
             "artist": album_data["artists"][0]["name"],
@@ -128,17 +137,23 @@ def add_to_collection(album: Album, authorization: str = Header(default=None)):
             "tracks": tracks,
             "genres": album_data.get("genres", []),
             "label": album_data.get("label", ""),
-            "popularity": album_data.get("popularity", 0)
+            "popularity": album_data.get("popularity", 0),
+            "condition": album_condition
         }
 
-        collection.append(updated_album)
+        album_dict = album.dict()
+        album_dict["condition"] = album_condition
+        collection.append(album_dict)
         print("Album added successfully with full details")
         return {"message": "Album added to collection", "total": len(collection)}
         
     except Exception as e:
         print(f"Error while fetching album details: {str(e)}")
         # If anything fails, fall back to basic info
-        collection.append(album.dict())
+        album_condition = album.condition if album.condition in Album.VALID_CONDITIONS else "M"
+        album_dict = album.dict()
+        album_dict["condition"] = album_condition
+        collection.append(album_dict)
         return {"message": "Album added with basic info (error occurred)", "total": len(collection)}
 
 
@@ -154,3 +169,18 @@ def delete_from_collection(index: int, authorization: str = Header(default=None)
         return {"message": "Removed", "removed": removed}
 
     return JSONResponse(status_code=404, content={"error": "Index out of range"})
+
+
+@router.patch("/collection/{album_id}/condition")
+def update_condition(album_id: str = Path(...), condition: str = "M", authorization: str = Header(default=None)):
+    token = get_token_user(authorization)
+    if not token:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+    collection = user_collections.get(token, [])
+    for album in collection:
+        if album.get("id") == album_id:
+            if condition not in Album.VALID_CONDITIONS:
+                return JSONResponse(status_code=400, content={"error": "Invalid condition code"})
+            album["condition"] = condition
+            return {"message": "Condition updated", "album": album}
+    return JSONResponse(status_code=404, content={"error": "Album not found in collection"})
