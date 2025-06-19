@@ -1,17 +1,49 @@
 // src/pages/SearchPage.jsx
-import React, { useState, useCallback } from 'react';
-import { searchAlbums, addToCollection, updateCondition } from '../api';
+import React, { useState, useCallback, useEffect } from 'react';
+import { searchAlbums, addToCollection, updateCondition, getCollection } from '../api';
 import AlbumCard from '../components/AlbumCard';
 import AlbumDetailModal from '../components/AlbumDetailModal';
 
 function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
+  // Initialize state from localStorage
+  const saved = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('searchPageState')) || {};
+    } catch { return {}; }
+  })();
+  const [query, setQuery] = useState(saved.query || '');
+  const [results, setResults] = useState(saved.results || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [addSuccess, setAddSuccess] = useState(null);
   const [justAddedAlbumId, setJustAddedAlbumId] = useState(null);
-  const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [selectedAlbum, setSelectedAlbum] = useState(saved.selectedAlbum || null);
+
+  // Persist state to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('searchPageState', JSON.stringify({ query, results, selectedAlbum }));
+  }, [query, results, selectedAlbum]);
+
+  // Sync collection status on mount
+  useEffect(() => {
+    async function syncCollectionStatus() {
+      try {
+        const response = await getCollection();
+        const collection = response.data || [];
+        setResults(prevResults =>
+          prevResults.map(album => ({
+            ...album,
+            in_collection: collection.some(col => col.id === album.id)
+          }))
+        );
+      } catch (err) {
+        // Optionally handle error
+      }
+    }
+    if (results.length > 0) {
+      syncCollectionStatus();
+    }
+  }, []);
 
   const handleSearch = useCallback(async (e) => {
     e.preventDefault();
@@ -61,11 +93,13 @@ function SearchPage() {
       const response = await addToCollection(albumWithCondition);
       setResults(prevResults => 
         prevResults.map(result => 
-          result.id === albumWithCondition.id ? { ...result, in_collection: true } : result
+          result.id === albumWithCondition.id 
+            ? { ...result, in_collection: true, condition: albumWithCondition.condition } 
+            : result
         )
       );
       if (selectedAlbum?.id === albumWithCondition.id) {
-        setSelectedAlbum(prev => ({ ...prev, in_collection: true }));
+        setSelectedAlbum(prev => ({ ...prev, in_collection: true, condition: albumWithCondition.condition }));
       }
       setJustAddedAlbumId(albumWithCondition.id);
       setTimeout(() => setJustAddedAlbumId(null), 1200);
@@ -109,55 +143,76 @@ function SearchPage() {
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
   return (
-    <div className="container mx-auto p-4 min-h-screen bg-gray-900 text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center text-green-400">Search for Albums</h1>
+    <div className="container mx-auto p-4 min-h-screen">
+      <div className="card bg-base-200 shadow-xl">
+        <div className="card-body">
+          <h1 className="card-title text-3xl font-bold mb-6 text-center text-primary">Search for Albums</h1>
 
-      {!isLoggedIn && (
-         <div className="text-center mb-6 p-4 bg-yellow-800 border border-yellow-600 rounded-lg">
-           <p className="font-semibold">You are not logged in.</p>
-           <p className="text-sm mb-3">Please log in via Spotify to search and manage your collection.</p>
-           <a
-             href={`${backendUrl}/`}
-             className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors"
-           >
-             Login with Spotify
-           </a>
-         </div>
-      )}
+          {!isLoggedIn && (
+            <div className="alert alert-warning mb-6">
+              <div>
+                <h3 className="font-bold">You are not logged in.</h3>
+                <div className="text-sm">Please log in via Spotify to search and manage your collection.</div>
+              </div>
+              <div className="flex-none">
+                <a
+                  href={`${backendUrl}/`}
+                  className="btn btn-primary"
+                >
+                  Login with Spotify
+                </a>
+              </div>
+            </div>
+          )}
 
-      <form onSubmit={handleSearch} className="mb-8 flex justify-center">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search album name or artist..."
-          className="p-2 rounded-l-md border border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-green-500 w-full max-w-md"
-          disabled={!isLoggedIn}
-        />
-        <button
-          type="submit"
-          className={`p-2 bg-green-600 hover:bg-green-700 text-white rounded-r-md font-semibold transition-colors ${!isLoggedIn || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          disabled={!isLoggedIn || loading}
-        >
-          {loading ? 'Searching...' : 'Search'}
-        </button>
-      </form>
+          <form onSubmit={handleSearch} className="mb-8 flex justify-center gap-2">
+            <div className="join w-full max-w-md">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search album name or artist..."
+                className="input input-bordered join-item w-full"
+                disabled={!isLoggedIn}
+              />
+              <button
+                type="submit"
+                className={`btn btn-primary join-item ${!isLoggedIn || loading ? 'btn-disabled' : ''}`}
+                disabled={!isLoggedIn || loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Searching...
+                  </>
+                ) : (
+                  'Search'
+                )}
+              </button>
+            </div>
+          </form>
 
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          {error && (
+            <div className="alert alert-error mb-4">
+              <span>{error}</span>
+            </div>
+          )}
 
-      {results.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {results.map((album, index) => (
-            <AlbumCard
-              key={`${album.spotify_url}-${index}`}
-              album={album}
-              onAdd={handleAddToCollection}
-              onClick={() => handleAlbumClick(album)}
-              justAdded={album.id === justAddedAlbumId}
-            />
-          ))}
+          {results.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {results.map((album, index) => (
+                <AlbumCard
+                  key={`${album.spotify_url}-${index}`}
+                  album={album}
+                  onAdd={handleAddToCollection}
+                  onClick={() => handleAlbumClick(album)}
+                  justAdded={album.id === justAddedAlbumId}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Album Detail Modal */}
       <AlbumDetailModal

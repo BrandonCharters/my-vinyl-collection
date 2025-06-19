@@ -6,13 +6,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        vinyl: {
-          primary: '#2A2A2A',
-          secondary: '#404040',
-          accent: '#FF4081',
-          light: '#F5F5F5',
-          dark: '#1A1A1A',
-        }
+        background: '#131605',
+        text: '#fffefd',
+        primary: '#d1803c',
+        secondary: '#869c26',
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',
@@ -26,5 +23,19 @@ module.exports = {
       }
     },
   },
-  plugins: [],
+  plugins: [require("daisyui")],
+  daisyui: {
+    themes: [
+      {
+        vinyl: {
+          "primary": "#d1803c",
+          "secondary": "#869c26",
+          "accent": "#37cdbe",
+          "neutral": "#3d4451",
+          "base-100": "#131605",
+          "base-content": "#fffefd",
+        },
+      },
+    ],
+  },
 }

@@ -25,41 +25,43 @@ function App() {
 
   return (
     <Router>
-      <div className="bg-gray-900 min-h-screen">
-        {/* Optional Simple Navbar */}
-        <nav className="bg-gray-800 p-4 text-white mb-4 shadow-md">
-          <div className="container mx-auto flex justify-between items-center">
-            <Link
-              to="/"
-              className="text-xl font-bold text-green-400 hover:text-green-300"
-            >
-              VinylHub
-            </Link>
-            <div>
-              <Link to="/search" className="mr-4 hover:text-gray-300">
+      <div data-theme="vinyl" className="min-h-screen">
+        {/* DaisyUI Navbar */}
+        <div className="navbar bg-base-100/80 backdrop-blur-md shadow-md border-b border-primary/30">
+          <div className="container mx-auto">
+            <div className="flex-1">
+              <Link
+                to="/"
+                className="btn btn-ghost text-xl text-primary hover:text-secondary"
+              >
+                VinylHub
+              </Link>
+            </div>
+            <div className="flex-none gap-2">
+              <Link to="/search" className="btn btn-ghost btn-sm">
                 Search
               </Link>
-              <Link to="/collection" className="mr-4 hover:text-gray-300">
+              <Link to="/collection" className="btn btn-ghost btn-sm">
                 Collection
               </Link>
               {isLoggedIn ? (
                 <button
                   onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm transition-colors"
+                  className="btn btn-secondary btn-sm"
                 >
                   Logout
                 </button>
               ) : (
                 <a
-                  href={`${backendUrl}/`} // Link to backend login
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm transition-colors"
+                  href={`${backendUrl}/`}
+                  className="btn btn-primary btn-sm"
                 >
                   Login
                 </a>
               )}
             </div>
           </div>
-        </nav>
+        </div>
 
         <Routes>
           {/* Redirect base path to search page */}
@@ -72,19 +74,16 @@ function App() {
           <Route
             path="*"
             element={
-              <div className="text-center text-white p-10">
-                <h1 className="text-3xl font-bold text-red-500">
-                  404 - Not Found
-                </h1>
-                <p className="mt-4">
-                  The page you are looking for does not exist.
-                </p>
-                <Link
-                  to="/"
-                  className="text-green-400 hover:underline mt-6 inline-block"
-                >
-                  Go Home
-                </Link>
+              <div className="hero min-h-screen bg-base-200">
+                <div className="hero-content text-center">
+                  <div className="max-w-md">
+                    <h1 className="text-5xl font-bold text-error">404</h1>
+                    <p className="py-6">The page you are looking for does not exist.</p>
+                    <Link to="/" className="btn btn-primary">
+                      Go Home
+                    </Link>
+                  </div>
+                </div>
               </div>
             }
           />

@@ -33,7 +33,11 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
   const [editingCondition, setEditingCondition] = useState(false);
 
   React.useEffect(() => {
-    setCondition(album?.condition || CONDITION_OPTIONS[0].code);
+    if (onAdd && !album.in_collection) {
+      setCondition('M');
+    } else {
+      setCondition(album?.condition || CONDITION_OPTIONS[0].code);
+    }
     setSaveSuccess(false);
     setEditingCondition(false);
   }, [album]);
@@ -64,7 +68,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
   };
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
+    <Transition.Root show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
           as={Fragment}
@@ -75,7 +79,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-vinyl-dark/80 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-base-300/80 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -89,10 +93,10 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="relative w-full max-w-5xl min-w-[350px] md:min-w-[700px] lg:min-w-[900px] transform overflow-hidden rounded-2xl bg-vinyl-primary p-6 shadow-xl transition-all">
+              <Dialog.Panel className="relative w-full max-w-5xl min-w-[350px] md:min-w-[700px] lg:min-w-[900px] transform overflow-hidden rounded-2xl bg-base-200 p-6 shadow-2xl border border-base-300">
                 <button
                   onClick={onClose}
-                  className="absolute right-4 top-4 text-vinyl-light/60 hover:text-vinyl-light transition-colors"
+                  className="btn btn-ghost btn-circle absolute right-4 top-4"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -117,76 +121,56 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
                   >
                     <div className="space-y-4">
                       <div>
-                        <Dialog.Title className="text-2xl font-bold text-vinyl-light mb-2">
+                        <Dialog.Title className="text-2xl font-bold text-base-content mb-2">
                           {album.name}
                         </Dialog.Title>
-                        <p className="text-xl text-vinyl-light/80 mb-4">{album.artist}</p>
-                        {album.in_collection && (
+                        <p className="text-xl text-secondary mb-4">{album.artist}</p>
+                        {album.in_collection && !editingCondition && (
                           <div className="mt-2">
-                            {!editingCondition ? (
-                              <>
-                                <span className="inline-block px-3 py-1 bg-vinyl-secondary rounded-full text-sm text-vinyl-light font-semibold mr-2">Condition: {album.condition}</span>
-                                <span className="text-xs text-vinyl-light/60">
-                                  {CONDITION_OPTIONS.find(opt => opt.code === album.condition)?.label}
-                                </span>
-                                <button
-                                  className="ml-3 px-3 py-1 bg-vinyl-accent rounded text-white text-xs font-semibold hover:bg-vinyl-accent/80 transition-colors"
-                                  onClick={() => setEditingCondition(true)}
-                                >
-                                  Edit
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <Dropdown
-                                  id="condition-edit"
-                                  label="Condition / Rating"
-                                  options={CONDITION_OPTIONS}
-                                  value={condition}
-                                  onChange={e => setCondition(e.target.value)}
-                                />
-                                <span className="text-xs text-vinyl-light/60 block mb-2">
-                                  {CONDITION_OPTIONS.find(opt => opt.code === condition)?.label}
-                                </span>
-                                <motion.button
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={handleSaveCondition}
-                                  className="px-4 py-2 bg-green-600 rounded-lg text-white font-medium hover:bg-green-700 transition-colors mt-1"
-                                  disabled={saving || condition === album.condition}
-                                >
-                                  {saveSuccess ? 'Saved!' : saving ? 'Saving...' : 'Save Condition'}
-                                </motion.button>
-                                <button
-                                  className="ml-2 px-3 py-2 bg-gray-600 rounded text-white text-xs font-semibold hover:bg-gray-500 transition-colors mt-1"
-                                  onClick={() => {
-                                    setEditingCondition(false);
-                                    setCondition(album.condition);
-                                  }}
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            )}
+                            <span className="badge badge-secondary mr-2">Condition: {album.condition}</span>
+                            
+                          </div>
+                        )}
+                        {album.in_collection && editingCondition && (
+                          <div className="mt-2">
+                            <Dropdown
+                              id="condition-edit"
+                              label="Condition / Rating"
+                              options={CONDITION_OPTIONS}
+                              value={condition}
+                              onChange={e => setCondition(e.target.value)}
+                            />
+                          </div>
+                        )}
+                        {onAdd && !album.in_collection && (
+                          <div className="mt-2">
+                            <Dropdown
+                              id="condition-add"
+                              label="Condition / Rating"
+                              options={CONDITION_OPTIONS}
+                              value={condition}
+                              onChange={e => setCondition(e.target.value)}
+                            />
                           </div>
                         )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="flex items-center space-x-2 text-vinyl-light/80">
+                        <div className="flex items-center space-x-2 text-secondary">
                           <TagIcon className="h-5 w-5" />
                           <span>{album.album_type}</span>
                         </div>
-                        <div className="flex items-center space-x-2 text-vinyl-light/80">
+                        <div className="flex items-center space-x-2 text-secondary">
                           <MusicalNoteIcon className="h-5 w-5" />
                           <span>{album.total_tracks} tracks</span>
                         </div>
                         {album.label && (
-                          <div className="flex items-center space-x-2 text-vinyl-light/80">
+                          <div className="flex items-center space-x-2 text-secondary">
                             <BuildingLibraryIcon className="h-5 w-5" />
                             <span>{album.label}</span>
                           </div>
                         )}
-                        <div className="flex items-center space-x-2 text-vinyl-light/80">
+                        <div className="flex items-center space-x-2 text-secondary">
                           <ChartBarIcon className="h-5 w-5" />
                           <span>Popularity: {album.popularity}%</span>
                         </div>
@@ -197,7 +181,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
                           {album.genres.map((genre, index) => (
                             <span 
                               key={index}
-                              className="px-3 py-1 bg-vinyl-secondary rounded-full text-sm text-vinyl-light"
+                              className="badge badge-secondary"
                             >
                               {genre}
                             </span>
@@ -206,7 +190,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
                       )}
 
                       <div className="space-y-2">
-                        <h3 className="text-vinyl-light/60 text-sm">Tracklist</h3>
+                        <h3 className="text-base-content text-sm">Tracklist</h3>
                         <div className="space-y-1 max-h-[200px] overflow-y-auto pr-2">
                           {album.tracks?.map((track, index) => (
                             <motion.div
@@ -214,7 +198,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: index * 0.05 }}
-                              className="flex items-center space-x-3 text-vinyl-light/80 p-2 rounded-lg hover:bg-vinyl-secondary/30"
+                              className="flex items-center space-x-3 text-base-content p-2 rounded-lg hover:bg-base-300"
                             >
                               <span className="text-sm font-medium">{index + 1}</span>
                               <span className="flex-1">{track}</span>
@@ -224,40 +208,56 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
                       </div>
                     </div>
 
-                    <div className="flex flex-row flex-nowrap items-center justify-between mt-6 gap-4">
-                      {!album.in_collection && (
-                        <Dropdown
-                          id="condition"
-                          label="Condition / Rating"
-                          options={CONDITION_OPTIONS}
-                          value={condition}
-                          onChange={e => setCondition(e.target.value)}
-                        />
-                      )}
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleSpotifyClick}
-                        className="min-w-[170px] px-4 py-2 bg-[#1DB954] rounded-lg text-white font-medium hover:bg-[#1DB954]/80 transition-colors text-center"
-                      >
-                        Open in Spotify
-                      </motion.button>
-                      
-                      {album.in_collection ? (
-                        <motion.button
-                          whileTap={{ scale: 0.95 }}
-                          onClick={handleRemoveClick}
-                          className="px-4 py-2 bg-red-500 rounded-lg text-white font-medium hover:bg-red-600 transition-colors"
-                        >
-                          Remove
-                        </motion.button>
-                      ) : (
-                        <motion.button
-                          whileTap={{ scale: 0.95 }}
+                    <div className="flex gap-4 mt-6">
+                      {onAdd && !album.in_collection && (
+                        <button
                           onClick={handleAddClick}
-                          className="px-4 py-2 bg-green-600 rounded-lg text-white font-medium hover:bg-green-700 transition-colors"
+                          className="btn btn-primary"
                         >
                           Add to Collection
-                        </motion.button>
+                        </button>
+                      )}
+                      {onRemove && album.in_collection && (
+                        <button
+                          onClick={handleRemoveClick}
+                          className="btn btn-secondary"
+                        >
+                          Remove from Collection
+                        </button>
+                      )}
+                      <button
+                        onClick={handleSpotifyClick}
+                        className="btn btn-outline btn-primary"
+                      >
+                        Open in Spotify
+                      </button>
+                      {album.in_collection && !editingCondition && (
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => setEditingCondition(true)}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {album.in_collection && editingCondition && (
+                        <>
+                          <button
+                            onClick={handleSaveCondition}
+                            className="btn btn-primary"
+                            disabled={saving || condition === album.condition}
+                          >
+                            Save Condition
+                          </button>
+                          <button
+                            className="btn btn-outline btn-secondary"
+                            onClick={() => {
+                              setEditingCondition(false);
+                              setCondition(album.condition);
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </>
                       )}
                     </div>
                   </motion.div>
@@ -267,7 +267,7 @@ const AlbumDetailModal = ({ isOpen, onClose, album, onRemove, onAdd, onUpdateCon
           </div>
         </div>
       </Dialog>
-    </Transition>
+    </Transition.Root>
   );
 };
 

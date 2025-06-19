@@ -23,8 +23,13 @@ function Callback() {
   }, [location, navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">
-      <p className="text-xl animate-pulse">Processing authentication...</p>
+    <div className="hero min-h-screen bg-base-200">
+      <div className="hero-content text-center">
+        <div className="max-w-md">
+          <h1 className="text-2xl font-bold mb-4">Processing authentication...</h1>
+          <span className="loading loading-spinner loading-lg text-primary"></span>
+        </div>
+      </div>
     </div>
   );
 }
