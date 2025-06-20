@@ -16,8 +16,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("spotify_access_token");
-    // Force re-render or navigate to make sure UI updates
-    window.location.href = "/search"; // Redirect to search after logout
+    window.location.href = "/search";
   };
 
   const backendUrl =
@@ -30,7 +29,6 @@ function App() {
   return (
     <Router>
       <div data-theme="vinyl" className="min-h-screen">
-        {/* DaisyUI Navbar */}
         <div className="navbar bg-base-100/80 backdrop-blur-md shadow-md border-b border-primary/30">
           <div className="container mx-auto">
             <div className="flex-1">
@@ -68,13 +66,10 @@ function App() {
         </div>
 
         <Routes>
-          {/* Redirect base path to search page */}
           <Route path="/" element={<Navigate replace to="/search" />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/collection" element={<CollectionPage />} />
-          {/* The route your backend redirects TO */}
           <Route path="/callback" element={<Callback />} />
-          {/* Optional: Add a 404 Not Found route */}
           <Route
             path="*"
             element={

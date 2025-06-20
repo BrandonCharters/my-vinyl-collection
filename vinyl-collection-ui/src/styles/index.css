@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles below this line */
-
-/* Optional: Custom base styles */
 :root {
   font-family: system-ui, sans-serif;
   --color-background: #131605;

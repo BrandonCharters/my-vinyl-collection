@@ -1,4 +1,3 @@
-// src/api.js
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
@@ -14,10 +13,6 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    // Add a timestamp to GET requests to try and bypass caching if needed
-    // if (config.method === 'get') {
-    //   config.params = { ...config.params, t: Date.now() };
-    // }
     return config;
   },
   (error) => {
@@ -30,11 +25,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Token might be expired or invalid
       console.error("Unauthorized request. Token might be expired.");
-      // Optional: Clear token and redirect to login
-      // localStorage.removeItem('spotify_access_token');
-      // window.location.href = `${API_BASE_URL}/`; // Redirect to backend login
     }
     return Promise.reject(error);
   }

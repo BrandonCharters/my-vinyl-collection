@@ -37,7 +37,7 @@ function SearchPage() {
           }))
         );
       } catch (err) {
-        // Optionally handle error
+        console.error("Error syncing collection status:", err);
       }
     }
     if (results.length > 0) {
@@ -53,7 +53,7 @@ function SearchPage() {
     setError(null);
     setResults([]);
     setAddSuccess(null);
-    setSelectedAlbum(null); // Clear selected album on new search
+    setSelectedAlbum(null);
 
     try {
       const response = await searchAlbums(query);
@@ -74,11 +74,9 @@ function SearchPage() {
     setError(null);
     setJustAddedAlbumId(null);
 
-    // Always open the modal for condition selection
     setSelectedAlbum(album);
   };
 
-  // Add a new handler for confirming add from the modal
   const handleConfirmAddToCollection = async (albumWithCondition) => {
     setAddSuccess(null);
     setError(null);
@@ -138,7 +136,7 @@ function SearchPage() {
     await updateCondition(albumId, newCondition);
   };
 
-  // Check if logged in (simple check for token existence)
+  // Check if logged in
   const isLoggedIn = !!localStorage.getItem('spotify_access_token');
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 

@@ -25,8 +25,7 @@ function CollectionPage() {
       console.error("Fetch collection error:", err);
       setError(err.response?.data?.error || "Failed to load collection. Are you logged in?");
       if (err.response?.status === 401) {
-         // Optionally clear token if unauthorized
-         // localStorage.removeItem('spotify_access_token');
+        localStorage.removeItem('spotify_access_token');
       }
     } finally {
       setLoading(false);
@@ -152,7 +151,6 @@ function CollectionPage() {
           <div>
             <h1 className="card-title text-3xl font-bold mb-6 text-center text-primary">My Vinyl Collection</h1>
 
-            {/* Display Mode Toggle and Search Link */}
             <div className="flex justify-center items-center gap-6 mb-8">
               <div className="join">
                 <button
@@ -213,7 +211,6 @@ function CollectionPage() {
         </div>
       </div>
 
-      {/* Modal Component */}
       <AlbumDetailModal
         album={selectedAlbum}
         isOpen={!!selectedAlbum}
