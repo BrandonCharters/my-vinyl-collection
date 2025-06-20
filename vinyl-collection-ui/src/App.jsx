@@ -23,6 +23,10 @@ function App() {
   const backendUrl =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
+  const handleLoginWithSpotify = () => {
+    window.location.href = "http://localhost:8000/login";
+  };
+
   return (
     <Router>
       <div data-theme="vinyl" className="min-h-screen">
@@ -52,12 +56,12 @@ function App() {
                   Logout
                 </button>
               ) : (
-                <a
-                  href={`${backendUrl}/`}
+                <button
+                  onClick={handleLoginWithSpotify}
                   className="btn btn-primary btn-sm"
                 >
-                  Login
-                </a>
+                  Login with Spotify
+                </button>
               )}
             </div>
           </div>
