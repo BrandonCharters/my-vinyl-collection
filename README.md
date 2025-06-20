@@ -1,4 +1,63 @@
-![2025-05-13 12_53_32-Films   TV](https://github.com/user-attachments/assets/07652e71-aba7-4328-af49-6d42fc05d93c)
-![2025-05-13 12_53_18-Films   TV](https://github.com/user-attachments/assets/ead9ce23-6577-4feb-be1a-7fdadc64ce18)
-![2025-05-13 12_52_27-Vite + React - Brave](https://github.com/user-attachments/assets/faf928d6-92a4-4230-8034-f8be52bff4e7)
-![2025-05-13 12_52_10-Films   TV](https://github.com/user-attachments/assets/1a534de6-a55d-42c0-8891-3bcf27bca1f7)
+## Prerequisites
+- [Node.js & npm](https://nodejs.org/)
+- [Python 3.10+](https://www.python.org/)
+- A [Spotify Developer Account](https://developer.spotify.com/dashboard/)
+
+---
+
+## 1. Clone the Repository
+```sh
+git clone https://github.com/BrandonCharters/my-vinyl-collection.git
+cd my-vinyl-collection
+```
+
+---
+
+## 2. Backend Setup (FastAPI)
+
+1. **Create a Spotify App:**
+   - Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/).
+   - Create an app and get your **Client ID** and **Client Secret**.
+   - Set the Redirect URI to: `http://localhost:8000/callback`
+
+2. **Environment Variables:**
+   - Copy `.env.example` to `.env` and fill in your credentials:
+     ```sh
+     cp .env.example .env
+     # Edit .env and set SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI
+     ```
+
+3. **Install dependencies:**
+   ```sh
+   pip install -r requirements.txt
+   ```
+
+4. **Run the backend:**
+   ```sh
+   uvicorn main:app --reload
+   ```
+   The backend runs at `http://localhost:8000/`
+
+---
+
+## 3. Frontend Setup (React + Vite)
+
+1. **Install dependencies:**
+   ```sh
+   cd vinyl-collection-ui
+   npm install
+   ```
+
+2. **Run the frontend:**
+   ```sh
+   npm run dev
+   ```
+   The frontend runs at `http://localhost:5173/`
+
+---
+
+## 4. Usage
+1. Open `http://localhost:5173/` in your browser.
+2. Click **Login with Spotify** and authorize the app.
+
+---
