@@ -12,10 +12,8 @@ const VinylStack = ({ albums, onAlbumClick }) => {
 
   return (
     <div className="w-full flex justify-center">
-      {/* Collection Box Container */}
       <div className="card bg-base-200 shadow-xl w-[90%] max-w-[1200px] min-h-[500px]">
         <div className="card-body p-8">
-          {/* Stack Container - Provides horizontal scrolling if needed */}
           <div className="relative overflow-x-auto overflow-y-hidden pb-8">
             {/* Actual Stack - Sets minimum width to prevent squishing */}
             <div className="relative h-[300px] min-w-max pl-4">
